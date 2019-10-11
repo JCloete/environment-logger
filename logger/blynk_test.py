@@ -2,7 +2,7 @@
 import blynklib
 import random
 
-BLYNK_AUTH = 'YourAuthToken'
+BLYNK_AUTH = 'eyK2PkL48piQSSER7hUeRdlPyMrJs_wj'
 
 # initialise blynk
 blynk = blynklib.Blynk(BLYNK_AUTH)
