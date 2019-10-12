@@ -46,19 +46,40 @@ def init_pi():
 
 # callback functions
 def monitoring():
+    # Set up debouncing
     interrupt_time = int(round(time.time() * 1000)) # setting current interrupt time
     global last_interrupt_time
 
     if (interrupt_time - last_interrupt_time > 300):
+        # INTERRUPT CODE BEGIN
         print("Monitoring")
 
+        # INTERRUPT CODE END
         last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
 
 def switch_frequency():
-    time.sleep(1)
+    # Set up debouncing
+    interrupt_time = int(round(time.time() * 1000)) # setting current interrupt time
+    global last_interrupt_time
+
+    if (interrupt_time - last_interrupt_time > 300):
+        # INTERRUPT CODE BEGIN
+        print("Switching Frequency")
+
+        # INTERRUPT CODE END
+        last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
 
 def reset():
-    time.sleep(1)
+    # Set up debouncing
+    interrupt_time = int(round(time.time() * 1000)) # setting current interrupt time
+    global last_interrupt_time
+
+    if (interrupt_time - last_interrupt_time > 300):
+        # INTERRUPT CODE BEGIN
+        print("Resetting")
+
+        # INTERRUPT CODE END
+        last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
 
 # Monitoring code
 def start_monitoring():
