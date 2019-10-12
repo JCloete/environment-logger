@@ -59,11 +59,15 @@ def get_DAC():
 
 def main():
     init_pi()
-    wiringpi.pinMode(1,2)
+    wiringpi.pinMode(1,wiringpi.PWM_OUTPUT)
+    wiringpi.pwmSetMode(wiringpi.PWM_MODE_MS)
+    wiringpi.pwmSetClock(3840)
+    wiringpi.pwmSetRange(2500)
     wiringpi.pwmWrite(1, 512) 
     output_data()
     while True:
         # Add stuff
+	time.sleep(1)
 
 
 
