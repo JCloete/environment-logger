@@ -3,7 +3,8 @@
 import wiringpi
 import time
 
-
+# Variables
+last_interrupt_time = 0
 
 humidity = 0.0
 temp = 0
@@ -47,7 +48,7 @@ def init_pi():
 def monitoring():
     interrupt_time = int(round(time.time() * 1000)) # setting current interrupt time
 
-    if (interrupt_time - last_interrupt_time > 300):
+    if (interrupt_time - global last_interrupt_time > 300):
         print("Monitoring")
 
         last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
@@ -103,9 +104,6 @@ def get_DAC():
 
 # MAIN FUNCTION = ENTRY POINT
 def main():
-    # variables
-    last_interrupt_time = 0
-    
     init_pi()
     #output_data()
     while True:
