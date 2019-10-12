@@ -1,10 +1,10 @@
 # import Relevant Librares
-#import RPi.GPIO as GPIO
 import wiringpi
 import time
 
 # Variables
 last_interrupt_time = 0
+buffer = bytes("")
 
 humidity = 0.0
 temp = 0
@@ -15,12 +15,13 @@ dac_out = 0.0
 
 def gpio_cleanup():
     wiringpi.pwmWrite(1, 0) # Effectively turn off pwm
-    wiringpi.digitalWrite(8, 0)
+    wiringpi.digitalWrite(8, 0) # Turn off pin 8
 
 
 def init_pi():
     # init pins and wiring pi
     wiringpi.wiringPiSetup()
+    wiringpi.wiringPiSPISetup(0, 244141)
 
     # init pwm
     wiringpi.pinMode(1,wiringpi.PWM_OUTPUT) # initialise pin 1 as PWM
@@ -107,21 +108,14 @@ def output_data():
     print("| {:^8} |".format(str(temp)) + "Sys Time | Humidity | Temp | Light | DAC out | Alarm |")
     print("-------------------------------------------------------------------")
 
+def read_ADC():
+    time.sleep(1)
 
 """
 def set_RTC():
     
 
 def get_RTC():
-    
-
-def get_temp():
-    
-
-def get_humidity():
-    
-
-def get_light():
     
 
 def get_DAC():
