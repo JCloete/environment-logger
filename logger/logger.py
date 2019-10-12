@@ -3,8 +3,7 @@
 import wiringpi
 import time
 
-# variables
-last_interrupt_time = 0
+
 
 humidity = 0.0
 temp = 0
@@ -104,6 +103,9 @@ def get_DAC():
 
 # MAIN FUNCTION = ENTRY POINT
 def main():
+    # variables
+    last_interrupt_time = 0
+    
     init_pi()
     #output_data()
     while True:
