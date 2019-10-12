@@ -35,9 +35,12 @@ def init_pi():
     wiringpi.pullUpDnControl(0, wiringpi.PUD_UP)
 
     # set up frequency switch button
-
+    wiringpi.pinMode(2, wiringpi.INPUT)
+    wiringpi.pullUpDnControl(0, wiringpi.PUD_UP)
 
     # set up reset button
+    wiringpi.pinMode(3, wiringpi.INPUT)
+    wiringpi.pullUpDnControl(0, wiringpi.PUD_UP)
 
     # init interrupts
     wiringpi.wiringPiISR(0, wiringpi.INT_EDGE_FALLING, monitoring) # stop/start
