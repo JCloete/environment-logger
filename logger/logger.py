@@ -59,9 +59,11 @@ def get_DAC():
 
 def main():
     init_pi()
-    wiringpi.pinMode(8,OUTPUT)
+    wiringpi.pinMode(1,2)
+    wiringpi.pwmWrite(1, 512) 
     output_data()
     while True:
+        # Add stuff
 
 
 
