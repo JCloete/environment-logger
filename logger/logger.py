@@ -3,10 +3,15 @@
 import wiringpi
 import time
 
+# variables
+last_interrupt_time = 0
+
 humidity = 0.0
 temp = 0
 light = 0
 dac_out = 0.0
+
+# function declarations
 
 def gpio_cleanup():
     wiringpi.pwmWrite(1, 0) # Effectively turn off pwm
@@ -41,8 +46,12 @@ def init_pi():
 
 # callback functions
 def monitoring():
-    time.sleep(0.3)
-    print("Monitoring")
+    interrupt_time = int(round(time.time() * 1000)) # setting current interrupt time
+
+    if (interrupt_time - last_interrupt_time > 300):
+        print("Monitoring")
+
+        last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
 
 def switch_frequency():
     time.sleep(1)
@@ -93,6 +102,7 @@ def get_light():
 def get_DAC():
 """
 
+# MAIN FUNCTION = ENTRY POINT
 def main():
     init_pi()
     #output_data()
