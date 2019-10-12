@@ -47,8 +47,9 @@ def init_pi():
 # callback functions
 def monitoring():
     interrupt_time = int(round(time.time() * 1000)) # setting current interrupt time
+    global last_interrupt_time
 
-    if (interrupt_time - global last_interrupt_time > 300):
+    if (interrupt_time - last_interrupt_time > 300):
         print("Monitoring")
 
         last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
