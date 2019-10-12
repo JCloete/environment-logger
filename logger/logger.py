@@ -1,5 +1,6 @@
 # import Relevant Librares
 #import RPi.GPIO as GPIO
+import wiringpi
 import time
 
 humidity = 0.0
@@ -8,7 +9,7 @@ light = 0
 dac_out = 0.0
 
 def init_pi():
-    
+    wiringpi.wiringPiSetup()
 
 def display_headings():
     print("-------------------------------------------------------------------")
@@ -57,10 +58,10 @@ def get_DAC():
 """
 
 def main():
-    display_headings()
-    time.sleep(1)
+    init_pi()
+    wiringpi.pinMode(8,OUTPUT)
     output_data()
-    time.sleep(1)
+    while True:
 
 
 
