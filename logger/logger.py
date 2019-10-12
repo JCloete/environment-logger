@@ -41,6 +41,7 @@ def init_pi():
 
 # callback functions
 def monitoring():
+    time.sleep(0.3)
     print("Monitoring")
 
 def switch_frequency():
