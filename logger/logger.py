@@ -2,6 +2,9 @@
 import wiringpi
 import time
 
+import RPi.GPIO as GPIO
+from MCP4922 import MCP4922
+
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_MCP3008
 
@@ -119,6 +122,13 @@ def read_ADC(channel):
         value = mcp.read_adc(channel)
         return value
 
+def init_DAC():
+        GPIO.setmode(GPIO.BCM)
+        dac = MCP4922(spibus=1, spidevice=0 , cs=16)
+
+def write_DAC():
+        dac.setVoltage(0, 512)
+
 """
 def set_RTC():
     
@@ -135,6 +145,8 @@ def main():
     #output_data()
     init_ADC()
     print("Humid: " + str(read_ADC(0)))
+    init_DAC()
+    write_DAC()
     while True:
         time.sleep(1)
 	print("Humid: " + str(read_ADC(0)))
@@ -142,8 +154,7 @@ def main():
 	print("Light: " + str(read_ADC(1)))
         time.sleep(1)
 	print("Temp: " + str(read_ADC(2)))
-
-
+        
 
 # Only run the functions if 
 if __name__ == "__main__":
