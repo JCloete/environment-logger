@@ -112,6 +112,7 @@ def output_data():
     print("-------------------------------------------------------------------")
 
 def init_ADC():
+	global mcp
         mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(0, 0))
 
 def read_ADC(channel):
@@ -132,14 +133,15 @@ def get_DAC():
 def main():
     init_pi()
     #output_data()
-    print(read_ADC(0))
+    init_ADC()
+    print("Humid: " + str(read_ADC(0)))
     while True:
         time.sleep(1)
-	read_ADC(0)
+	print("Humid: " + str(read_ADC(0)))
         time.sleep(1)
-	read_ADC(1)
+	print("Light: " + str(read_ADC(1)))
         time.sleep(1)
-	read_ADC(2)
+	print("Temp: " + str(read_ADC(2)))
 
 
 
