@@ -2,9 +2,6 @@
 import wiringpi
 import time
 
-import RPi.GPIO as GPIO
-from MCP4922 import MCP4922
-
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_MCP3008
 
@@ -123,11 +120,10 @@ def read_ADC(channel):
         return value
 
 def init_DAC():
-        GPIO.setmode(GPIO.BCM)
-        dac = MCP4922(spibus=1, spidevice=0 , cs=16)
+        dac = wiringpi.wiringPiSPISetup(1, 1024)
 
 def write_DAC():
-        dac.setVoltage(0, 512)
+        wiringpi.wiringPiSPIDataRW(1, 512, 2)
 
 """
 def set_RTC():
