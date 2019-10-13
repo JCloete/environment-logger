@@ -13,7 +13,9 @@ last_interrupt_time = 0
 BLYNK_AUTH = 'eyK2PkL48piQSSER7hUeRdlPyMrJs_wj'
 blynk = blynklib.Blynk(BLYNK_AUTH)
 
-humidity = 0.0
+alarm = 0
+monitor = 1
+humidity =0
 temp = 0
 light = 0
 dac_out = 0.0
@@ -51,10 +53,15 @@ def init_pi():
     wiringpi.pinMode(3, wiringpi.INPUT)
     wiringpi.pullUpDnControl(3, wiringpi.PUD_UP)
 
+    # set up alarm dismiss button
+    wiringpi.pinMode(4, wiringpi.INPUT)
+    wiringpi.pullUpDnControl(4, wiringpi.PUD_UP)
+
     # init interrupts
     wiringpi.wiringPiISR(0, wiringpi.INT_EDGE_FALLING, monitoring) # stop/start
     wiringpi.wiringPiISR(2, wiringpi.INT_EDGE_FALLING, switch_frequency) # frequency switch
     wiringpi.wiringPiISR(3, wiringpi.INT_EDGE_FALLING, reset) # reset switch
+    wiringpi.wiringPiISR(4, wiringpi.INT_EDGE_FALLING, dismiss) #dismiss alarm
 
 @blynk.handle_event("read v1")
 def read_virtual_pin_handler(vpin):
@@ -74,7 +81,24 @@ def monitoring():
     if (interrupt_time - last_interrupt_time > 300):
         # INTERRUPT CODE BEGIN
         print("Monitoring")
+	global monitor
+	if(monitor):
+		monitor = 0
+	else:
+		monitor = 1
 
+        # INTERRUPT CODE END
+        last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
+
+def dismiss():
+    # Set up debouncing
+    interrupt_time = int(round(time.time() * 1000)) # setting current interrupt time
+    global last_interrupt_time
+
+    if (interrupt_time - last_interrupt_time > 300):
+        # INTERRUPT CODE BEGIN
+        print("Dismissing alarm")
+	alarm = 0
         # INTERRUPT CODE END
         last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
 
@@ -122,9 +146,33 @@ def display_headings():
     print ('-------------------------------------------------------------------')
 
 def output_data():
-    print("| {:^8} |".format(str(rtc_val())) + " {:^8} |".format(str(rtc_val()))+" {:^8} |".format(str(read_ADC(0)))
-		+" {:^3}C |".format(str(read_ADC(2)))+" {:^5} |".format(str(read_ADC(1)))
-		+" {:^6}V |".format("val")+" {:^5} |".format("*"))
+    global dac_out
+    if(monitor):
+	humidity = read_ADC(0)*3.3/1024
+	temp = (read_ADC(2)*3.3/1024-0.5)/0.01
+	light = read_ADC(1)
+	dac_out = (light/1023.0)*humidity
+    else:
+	humidity = 0
+	temp = 0
+	light = 0
+	dac_out = 0
+
+    if((dac_out> 2.65 or dac_out< 0.65) and (monitor)):
+	alarm = 1
+	alarm_string = "*"
+    else:
+	alarm = 0
+	alarm_string = " "
+
+    if(alarm):
+	wiringpi.pwmWrite(1,500)
+    else:
+	wiringpi.pwmWrite(1,0)
+
+    print("| {:^8} |".format(str(rtc_val())) + " {:^8} |".format(str(rtc_val()))+" {0:6.2f} V |".format(humidity)
+		+" {0:2.0f} C |".format(temp)+" {0:5.0f} |".format(light)
+		+"  {0:3.2f} V |".format(dac_out)+" {:^5} |".format(alarm_string))
     print("-------------------------------------------------------------------")
 
 def init_ADC():
@@ -155,7 +203,7 @@ def rtc_val():
 	hours = conv(bus.read_byte_data(0x6f,0x02)&0x3f)
 	mins = conv(bus.read_byte_data(0x6f,0x01)&0x7f)
 	secs = conv(bus.read_byte_data(0x6f, 0x00)&0x7f)
-	stringy = str(hours)+":"+str(mins)+":"+str(secs)
+	stringy = "{:02}:{:02}:{:02}".format(hours,mins,secs)
 	return(stringy)
 
 # MAIN FUNCTION = ENTRY POINT
