@@ -1,24 +1,30 @@
 # import Relevant Librares
 import wiringpi
 import time
-
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_MCP3008
+import spidev
+import smbus
+import blynklib
 
 # Variables
 last_interrupt_time = 0
+
+BLYNK_AUTH = 'eyK2PkL48piQSSER7hUeRdlPyMrJs_wj'
+blynk = blynklib.Blynk(BLYNK_AUTH)
 
 humidity = 0.0
 temp = 0
 light = 0
 dac_out = 0.0
+data1s = 0
+data2s = 0
 
 # function declarations
 
 def gpio_cleanup():
     wiringpi.pwmWrite(1, 0) # Effectively turn off pwm
     wiringpi.digitalWrite(8, 0) # Turn off pin 8
-
 
 def init_pi():
     # init pins and wiring pi
@@ -49,6 +55,15 @@ def init_pi():
     wiringpi.wiringPiISR(0, wiringpi.INT_EDGE_FALLING, monitoring) # stop/start
     wiringpi.wiringPiISR(2, wiringpi.INT_EDGE_FALLING, switch_frequency) # frequency switch
     wiringpi.wiringPiISR(3, wiringpi.INT_EDGE_FALLING, reset) # reset switch
+
+@blynk.handle_event("read v1")
+def read_virtual_pin_handler(vpin):
+	temp = (read_ADC(2)*3.3/1024 - 0.5)/0.01
+	humidity = read_ADC(0)
+	light = read_ADC(1)
+	blynk.virtual_write(1, temp)
+	blynk.virtual_write(2, light)
+	blynk.virtual_write(3, humidity)
 
 # callback functions
 def monitoring():
@@ -102,12 +117,14 @@ def stop_LED():
     wiringpi.pwmWrite(1, 0) # Start pwm with no output
 
 def display_headings():
-    print("-------------------------------------------------------------------")
-    print("| RTC Time | Sys Time | Humidity | Temp | Light | DAC out | Alarm |")
-    print("-------------------------------------------------------------------")
+    print ('-------------------------------------------------------------------')
+    print ("| RTC Time | Sys Time | Humidity | Temp | Light | DAC out | Alarm |")
+    print ('-------------------------------------------------------------------')
 
 def output_data():
-    print("| {:^8} |".format(str(temp)) + "Sys Time | Humidity | Temp | Light | DAC out | Alarm |")
+    print("| {:^8} |".format(str(rtc_val())) + " {:^8} |".format(str(rtc_val()))+" {:^8} |".format(str(read_ADC(0)))
+		+" {:^3}C |".format(str(read_ADC(2)))+" {:^5} |".format(str(read_ADC(1)))
+		+" {:^6}V |".format("val")+" {:^5} |".format("*"))
     print("-------------------------------------------------------------------")
 
 def init_ADC():
@@ -118,40 +135,40 @@ def read_ADC(channel):
         value = mcp.read_adc(channel)
         return value
 
-def init_DAC():
-        dac = wiringpi.wiringPiSPISetup(1, 1024)
-
 def write_DAC():
-	buf = bytes(int("0b0111000000000000", 2))
-        retlen, retdata = wiringpi.wiringPiSPIDataRW(1, buf)
-	#print("Nothing")
+	val = 500
+	b1 = 0b0011 << 4 | val >> 6
+	b2 = (val << 2)%256
 
-"""
-def set_RTC():
-    
+	spi = spidev.SpiDev()
+	spi.open(0,1)
+	spi.max_speed_hz = 1000000
+	spi.mode = 0
+	send = [b1, b2]
+	spi.xfer(send)
 
-def get_RTC():
-    
+def conv(val):
+	return (((val)&0x0f)+((val) >> 4)*10)
 
-def get_DAC():
-"""
+def rtc_val():
+	bus = smbus.SMBus(1)
+	hours = conv(bus.read_byte_data(0x6f,0x02)&0x3f)
+	mins = conv(bus.read_byte_data(0x6f,0x01)&0x7f)
+	secs = conv(bus.read_byte_data(0x6f, 0x00)&0x7f)
+	stringy = str(hours)+":"+str(mins)+":"+str(secs)
+	return(stringy)
 
 # MAIN FUNCTION = ENTRY POINT
 def main():
     init_pi()
     #output_data()
     init_ADC()
-    print("Humid: " + str(read_ADC(0)))
-    init_DAC()
-    write_DAC()
+    display_headings()
     while True:
+	write_DAC()
+	output_data()
         time.sleep(1)
-	print("Humid: " + str(read_ADC(0)))
-        time.sleep(1)
-	print("Light: " + str(read_ADC(1)))
-        time.sleep(1)
-	print("Temp: " + str(read_ADC(2)))
-        
+	blynk.run()
 
 # Only run the functions if 
 if __name__ == "__main__":
