@@ -1,5 +1,6 @@
 # import Relevant Librares
 import wiringpi
+import mcp3008
 import time
 
 # Variables
@@ -109,7 +110,8 @@ def output_data():
     print("-------------------------------------------------------------------")
 
 def read_ADC():
-    time.sleep(1)
+    with mcp3008.MCP3008() as adc:
+            print adc.read([mcp3008.CH2]) # print raw data
 
 """
 def set_RTC():
@@ -125,6 +127,7 @@ def get_DAC():
 def main():
     init_pi()
     #output_data()
+    read_ADC()
     while True:
         # Add stuff
 	    continue
