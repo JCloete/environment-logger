@@ -112,7 +112,7 @@ def output_data():
     print("-------------------------------------------------------------------")
 
 def read_ADC():
-        mcp = Adafruit_MCP3008.MCP3008(clk=23 , cs=8 , miso=21 , mosi=19 )
+        mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(0, 0))
         value = mcp.read_adc(2)
         print(value)
 
