@@ -132,8 +132,8 @@ def main():
     #output_data()
     read_ADC()
     while True:
-        # Add stuff
-	    continue
+        time.sleep(1)
+	read_ADC()
 
 
 
