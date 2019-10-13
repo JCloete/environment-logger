@@ -7,7 +7,6 @@ import Adafruit_MCP3008
 
 # Variables
 last_interrupt_time = 0
-buffer = bytes("")
 
 humidity = 0.0
 temp = 0
@@ -123,7 +122,9 @@ def init_DAC():
         dac = wiringpi.wiringPiSPISetup(1, 1024)
 
 def write_DAC():
-        wiringpi.wiringPiSPIDataRW(1, 512, 2)
+	buf = bytes(int("0b0111000000000000", 2))
+        retlen, retdata = wiringpi.wiringPiSPIDataRW(1, buf)
+	#print("Nothing")
 
 """
 def set_RTC():
