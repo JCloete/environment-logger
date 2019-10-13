@@ -113,7 +113,8 @@ def output_data():
 
 def read_ADC():
         mcp = Adafruit_MCP3008.MCP3008(clk=23 , cs=8 , miso=21 , mosi=19 )
-        mcp.read_adc(2)
+        value = mcp.read_adc(2)
+        print(value)
 
 """
 def set_RTC():
