@@ -1,7 +1,9 @@
 # import Relevant Librares
 import wiringpi
-import mcp3008
 import time
+
+import Adafruit_GPIO.SPI as SPI
+import Adafruit_MCP3008
 
 # Variables
 last_interrupt_time = 0
@@ -110,8 +112,8 @@ def output_data():
     print("-------------------------------------------------------------------")
 
 def read_ADC():
-    with mcp3008.MCP3008() as adc:
-            print adc.read([mcp3008.CH2]) # print raw data
+        mcp = Adafruit_MCP3008.MCP3008(clk=23 , cs=8 , miso=21 , mosi=19 )
+        mcp.read_adc(2)
 
 """
 def set_RTC():
