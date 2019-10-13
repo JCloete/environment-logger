@@ -111,10 +111,12 @@ def output_data():
     print("| {:^8} |".format(str(temp)) + "Sys Time | Humidity | Temp | Light | DAC out | Alarm |")
     print("-------------------------------------------------------------------")
 
-def read_ADC():
+def init_ADC():
         mcp = Adafruit_MCP3008.MCP3008(spi=SPI.SpiDev(0, 0))
-        value = mcp.read_adc(2)
-        print(value)
+
+def read_ADC(channel):
+        value = mcp.read_adc(channel)
+        return value
 
 """
 def set_RTC():
@@ -130,10 +132,14 @@ def get_DAC():
 def main():
     init_pi()
     #output_data()
-    read_ADC()
+    print(read_ADC(0))
     while True:
         time.sleep(1)
-	read_ADC()
+	read_ADC(0)
+        time.sleep(1)
+	read_ADC(1)
+        time.sleep(1)
+	read_ADC(2)
 
 
 
