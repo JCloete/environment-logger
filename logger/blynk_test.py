@@ -2,7 +2,7 @@
 import blynklib
 import random
 
-BLYNK_AUTH = 'eyK2PkL48piQSSER7hUeRdlPyMrJs_wj'
+BLYNK_AUTH = 'i8D2wMYEalWhZ08jz7nq8ESe1X7UFQCi'
 
 # initialise blynk
 blynk = blynklib.Blynk(BLYNK_AUTH)
@@ -20,7 +20,7 @@ humidity = 20
 READ_PRINT_MSG = "Temp: V{}, Light: V{}, Humidity: V{}"
 
 # register handler for virtual pin reading
-@blynk.handle_event('read V{}'.format(temp_pin))
+@blynk.handle_event('read V{1')
 def read_virtual_pin_handler(pin):
     print(READ_PRINT_MSG.format(temp_pin, light_pin, humidity_pin))
     blynk.virtual_write(temp_pin, temp)

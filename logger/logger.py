@@ -1,5 +1,8 @@
 # import Relevant Librares
+import datetime
 import wiringpi
+import math
+import os
 import time
 import Adafruit_GPIO.SPI as SPI
 import Adafruit_MCP3008
@@ -11,7 +14,8 @@ import BlynkLib
 last_interrupt_time = 0
 last_alarm_time = 0
 
-BLYNK_AUTH = 'eyK2PkL48piQSSER7hUeRdlPyMrJs_wj'
+#BLYNK_AUTH = "QEQW3pahNPNIQ0KNypUZZCJIaRw2KoAl"
+BLYNK_AUTH = "i8D2wMYEaIWhZ08jz7nq8ESe1X7UFQCi"
 blynk = BlynkLib.Blynk(BLYNK_AUTH)
 
 frequency = 1
@@ -134,6 +138,7 @@ def reset():
         # INTERRUPT CODE BEGIN
         print("Resetting")
 	sys_secs = 0
+	os.system('printf "\033c"')
         # INTERRUPT CODE END
         last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
 
@@ -155,18 +160,18 @@ def display_headings():
     print ('-------------------------------------------------------------------')
     print ("| RTC Time | Sys Time | Humidity | Temp | Light | DAC out | Alarm |")
     print ('-------------------------------------------------------------------')
-    blynk.virtual_write(0,'-------------------------------------------------------------------\n')
-    blynk.virtual_write(0,"| RTC Time | Sys Time | Humidity | Temp | Light | DAC out | Alarm |\n")
-    blynk.virtual_write(0,'-------------------------------------------------------------------\n')
 
 def output_data():
     global dac_out
     global alarm
     global last_alarm_time
     global sys_secs
+    global blynk
+    global BLYNK_AUTH
+    blynk=BlynkLib.Blynk(BLYNK_AUTH)
 
     humidity = read_ADC(0)*3.3/1024
-    temp = (read_ADC(2)*3.3/1024-0.5)/0.01
+    temp = (read_ADC(2)*3.3/1024-0.5)/0.01-3
     light = read_ADC(1)
     dac_out = (light/1023.0)*humidity
     sys_time = keep_sys_time()
@@ -174,10 +179,11 @@ def output_data():
     if((dac_out> 2.65 or dac_out< 0.65) and (monitor)):
 	alarm_time = sys_secs
 	if(alarm_time-last_alarm_time>180 or last_alarm_time==0 or alarm == 1):
-		alarm = 1
+		if(alarm==0):
+			alarm = 1
+			last_alarm_time = alarm_time
         else:
 		alarm = 0
-	last_alarm_time = alarm_time
     else:
 	alarm = 0
 
@@ -199,15 +205,17 @@ def output_data():
     	blynk.virtual_write(1, temp)
     	blynk.virtual_write(2, light)
     	blynk.virtual_write(3, humidity)
+	blynk.virtual_write(5, dac_out)
+    write_DAC(int(dac_out*(1023/3.3)))
     time.sleep(frequency)
 
 def keep_sys_time():
 	global sys_secs
-	sys_mins = (sys_secs-sys_secs%60)/60
+	sys_mins = int(math.floor(sys_secs/60))
 	secs = sys_secs%60
-	sys_hours = (sys_mins-sys_mins%60)/60
-	sys_mins = sys_mins-sys_mins%60
-	stringy = "{:02d}:{:02d}:{:02d}".format(sys_hours, sys_mins, secs)
+	sys_hours = int(math.floor((sys_mins)/60))
+	mins = sys_mins%60
+	stringy = "{:02d}:{:02d}:{:02d}".format(sys_hours, mins, secs)
 	sys_secs+= frequency
 	return(stringy)
 
@@ -219,8 +227,7 @@ def read_ADC(channel):
         value = mcp.read_adc(channel)
         return value
 
-def write_DAC():
-	val = 500
+def write_DAC(val):
 	b1 = 0b0011 << 4 | val >> 6
 	b2 = (val << 2)%256
 
@@ -235,12 +242,13 @@ def conv(val):
 	return (((val)&0x0f)+((val) >> 4)*10)
 
 def rtc_val():
-	bus = smbus.SMBus(1)
-	hours = conv(bus.read_byte_data(0x6f,0x02)&0x3f)
-	mins = conv(bus.read_byte_data(0x6f,0x01)&0x7f)
-	secs = conv(bus.read_byte_data(0x6f, 0x00)&0x7f)
-	stringy = "{:02}:{:02}:{:02}".format(hours,mins,secs)
-	return(stringy)
+	#bus = smbus.SMBus(1)
+	#hours = conv(bus.read_byte_data(0x6f,0x02)&0x3f)
+	#mins = conv(bus.read_byte_data(0x6f,0x01)&0x7f)
+	#secs = conv(bus.read_byte_data(0x6f, 0x00)&0x7f)
+	#stringy = "{:02}:{:02}:{:02}".format(hours,mins,secs)
+	#return(stringy)
+	return(time.strftime("%H:%M:%S", time.localtime()))
 
 # MAIN FUNCTION = ENTRY POINT
 def main():
@@ -249,9 +257,8 @@ def main():
     init_ADC()
     display_headings()
     while True:
-	write_DAC()
-	output_data()
 	blynk.run()
+	output_data()
 
 # Only run the functions if
 if __name__ == "__main__":
