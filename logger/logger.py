@@ -5,14 +5,16 @@ import Adafruit_GPIO.SPI as SPI
 import Adafruit_MCP3008
 import spidev
 import smbus
-import blynklib
+import BlynkLib
 
 # Variables
 last_interrupt_time = 0
+last_alarm_time = 0
 
 BLYNK_AUTH = 'eyK2PkL48piQSSER7hUeRdlPyMrJs_wj'
-blynk = blynklib.Blynk(BLYNK_AUTH)
+blynk = BlynkLib.Blynk(BLYNK_AUTH)
 
+frequency = 1
 alarm = 0
 monitor = 1
 humidity =0
@@ -21,6 +23,7 @@ light = 0
 dac_out = 0.0
 data1s = 0
 data2s = 0
+sys_secs = 0
 
 # function declarations
 
@@ -63,14 +66,14 @@ def init_pi():
     wiringpi.wiringPiISR(3, wiringpi.INT_EDGE_FALLING, reset) # reset switch
     wiringpi.wiringPiISR(4, wiringpi.INT_EDGE_FALLING, dismiss) #dismiss alarm
 
-@blynk.handle_event("read v1")
-def read_virtual_pin_handler(vpin):
-	temp = (read_ADC(2)*3.3/1024 - 0.5)/0.01
-	humidity = read_ADC(0)
-	light = read_ADC(1)
-	blynk.virtual_write(1, temp)
-	blynk.virtual_write(2, light)
-	blynk.virtual_write(3, humidity)
+#@blynk.handle_event("read v1")
+#def read_virtual_pin_handler(vpin):
+#	temp = (read_ADC(2)*3.3/1024 - 0.5)/0.01
+#	humidity = read_ADC(0)
+#	light = read_ADC(1)
+#	blynk.virtual_write(1, temp)
+#	blynk.virtual_write(2, light)
+#	blynk.virtual_write(3, humidity)
 
 # callback functions
 def monitoring():
@@ -94,7 +97,7 @@ def dismiss():
     # Set up debouncing
     interrupt_time = int(round(time.time() * 1000)) # setting current interrupt time
     global last_interrupt_time
-
+    global alarm
     if (interrupt_time - last_interrupt_time > 300):
         # INTERRUPT CODE BEGIN
         print("Dismissing alarm")
@@ -110,6 +113,13 @@ def switch_frequency():
     if (interrupt_time - last_interrupt_time > 300):
         # INTERRUPT CODE BEGIN
         print("Switching Frequency")
+	global frequency
+	if(frequency==1):
+		frequency=2
+	elif(frequency==2):
+		frequency=5
+	elif(frequency==5):
+		frequency=1
 
         # INTERRUPT CODE END
         last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
@@ -118,11 +128,12 @@ def reset():
     # Set up debouncing
     interrupt_time = int(round(time.time() * 1000)) # setting current interrupt time
     global last_interrupt_time
+    global sys_secs
 
     if (interrupt_time - last_interrupt_time > 300):
         # INTERRUPT CODE BEGIN
         print("Resetting")
-
+	sys_secs = 0
         # INTERRUPT CODE END
         last_interrupt_time = int(round(time.time() * 1000)) # resetting interrupt time
 
@@ -144,36 +155,61 @@ def display_headings():
     print ('-------------------------------------------------------------------')
     print ("| RTC Time | Sys Time | Humidity | Temp | Light | DAC out | Alarm |")
     print ('-------------------------------------------------------------------')
+    blynk.virtual_write(0,'-------------------------------------------------------------------\n')
+    blynk.virtual_write(0,"| RTC Time | Sys Time | Humidity | Temp | Light | DAC out | Alarm |\n")
+    blynk.virtual_write(0,'-------------------------------------------------------------------\n')
 
 def output_data():
     global dac_out
-    if(monitor):
-	humidity = read_ADC(0)*3.3/1024
-	temp = (read_ADC(2)*3.3/1024-0.5)/0.01
-	light = read_ADC(1)
-	dac_out = (light/1023.0)*humidity
-    else:
-	humidity = 0
-	temp = 0
-	light = 0
-	dac_out = 0
+    global alarm
+    global last_alarm_time
+    global sys_secs
+
+    humidity = read_ADC(0)*3.3/1024
+    temp = (read_ADC(2)*3.3/1024-0.5)/0.01
+    light = read_ADC(1)
+    dac_out = (light/1023.0)*humidity
+    sys_time = keep_sys_time()
 
     if((dac_out> 2.65 or dac_out< 0.65) and (monitor)):
-	alarm = 1
-	alarm_string = "*"
+	alarm_time = sys_secs
+	if(alarm_time-last_alarm_time>180 or last_alarm_time==0 or alarm == 1):
+		alarm = 1
+        else:
+		alarm = 0
+	last_alarm_time = alarm_time
     else:
 	alarm = 0
-	alarm_string = " "
 
     if(alarm):
 	wiringpi.pwmWrite(1,500)
+	alarm_string = "*"
     else:
 	wiringpi.pwmWrite(1,0)
+	alarm_string = " "
 
-    print("| {:^8} |".format(str(rtc_val())) + " {:^8} |".format(str(rtc_val()))+" {0:6.2f} V |".format(humidity)
+    if(monitor):
+    	longun = ("| {:^8} |".format(str(rtc_val())) + " {:^8} |".format(sys_time)+" {0:6.2f} V |".format(humidity)
 		+" {0:2.0f} C |".format(temp)+" {0:5.0f} |".format(light)
 		+"  {0:3.2f} V |".format(dac_out)+" {:^5} |".format(alarm_string))
-    print("-------------------------------------------------------------------")
+	print(longun)
+    	print("-------------------------------------------------------------------")
+    	blynk.virtual_write(0, longun+"\n")
+	blynk.virtual_write(0, "-------------------------------------------------------------------\n")
+    	blynk.virtual_write(1, temp)
+    	blynk.virtual_write(2, light)
+    	blynk.virtual_write(3, humidity)
+    time.sleep(frequency)
+
+def keep_sys_time():
+	global sys_secs
+	sys_mins = (sys_secs-sys_secs%60)/60
+	secs = sys_secs%60
+	sys_hours = (sys_mins-sys_mins%60)/60
+	sys_mins = sys_mins-sys_mins%60
+	stringy = "{:02d}:{:02d}:{:02d}".format(sys_hours, sys_mins, secs)
+	sys_secs+= frequency
+	return(stringy)
 
 def init_ADC():
 	global mcp
@@ -192,8 +228,8 @@ def write_DAC():
 	spi.open(0,1)
 	spi.max_speed_hz = 1000000
 	spi.mode = 0
-	send = [b1, b2]
-	spi.xfer(send)
+	send_data = [b1, b2]
+	spi.xfer(send_data)
 
 def conv(val):
 	return (((val)&0x0f)+((val) >> 4)*10)
@@ -215,13 +251,13 @@ def main():
     while True:
 	write_DAC()
 	output_data()
-        time.sleep(1)
 	blynk.run()
 
-# Only run the functions if 
+# Only run the functions if
 if __name__ == "__main__":
     # Make sure the GPIO is stopped correctly
     try:
+	#frequency = 1
         while True:
             main()
     except KeyboardInterrupt:
